@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useState, useEffect, useRef, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Camera, Upload, Loader2 } from 'lucide-react';
@@ -28,7 +28,7 @@ function SubmitButton({ children }: { children: React.ReactNode }) {
 
 
 export function ScanInterface({ onScanComplete }: { onScanComplete: (result: ScanResult) => void }) {
-    const [state, formAction] = useFormState(analyzePatchAction, initialState);
+    const [state, formAction] = useActionState(analyzePatchAction, initialState);
     const [scanResult, setScanResult] = useState<ScanResult | null>(null);
     const [imageDataUri, setImageDataUri] = useState<string>('');
     const formRef = useRef<HTMLFormElement>(null);

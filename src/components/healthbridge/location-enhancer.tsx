@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useFormStatus } from 'react-dom';
 import { getEnhancedLocation } from '@/actions/enhance-location';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,7 +25,7 @@ function SubmitButton() {
 }
 
 export function LocationEnhancer({ initialLocation }: { initialLocation: string }) {
-  const [state, formAction] = useFormState(getEnhancedLocation, initialState);
+  const [state, formAction] = useActionState(getEnhancedLocation, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
