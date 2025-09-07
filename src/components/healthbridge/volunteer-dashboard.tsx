@@ -8,7 +8,6 @@ import { AvailabilityCalendar } from '@/components/healthbridge/availability-cal
 import { useState } from 'react';
 import { RideRequestDetailsModal } from './ride-request-details-modal';
 import type { RideRequest } from '@/lib/types';
-import Image from 'next/image';
 
 export function VolunteerDashboard() {
   const { rideRequests, acceptRide } = useApp();
@@ -76,20 +75,9 @@ export function VolunteerDashboard() {
             )}
         </div>
 
-        {/* Availability and Map */}
+        {/* Availability */}
         <div className="space-y-8">
             <AvailabilityCalendar />
-            <Card>
-                <CardHeader>
-                    <CardTitle>Requests Map</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="aspect-square w-full rounded-lg overflow-hidden">
-                        <Image src="https://picsum.photos/400/400" alt="Map of requests" width={400} height={400} className="object-cover w-full h-full" data-ai-hint="map gps" />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">Map shows approximate locations of active requests.</p>
-                </CardContent>
-            </Card>
         </div>
       </div>
 
