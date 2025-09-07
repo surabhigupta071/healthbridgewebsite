@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useActionState } from 'react';
@@ -32,6 +33,7 @@ export function ScanInterface({ onScanComplete }: { onScanComplete: (result: Sca
     const [scanResult, setScanResult] = useState<ScanResult | null>(null);
     const [imageDataUri, setImageDataUri] = useState<string>('');
     const formRef = useRef<HTMLFormElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -107,20 +109,26 @@ export function ScanInterface({ onScanComplete }: { onScanComplete: (result: Sca
                         </Button>
                     </TabsContent>
                     <TabsContent value="upload">
-                        <Label htmlFor="patch-upload" className="w-full aspect-square border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center relative overflow-hidden mt-4 bg-muted/20 cursor-pointer">
-                            <Upload className="w-16 h-16 text-muted-foreground/40 mb-4" />
-                            <p className="text-muted-foreground mb-2">Click to browse or drag & drop</p>
-                            <Button variant="outline" type="button">
-                                Browse Files
-                            </Button>
-                        </Label>
-                        <Input 
-                            id="patch-upload"
-                            type="file" 
-                            className="hidden" 
-                            accept="image/*"
-                            onChange={handleFileChange}
-                        />
+                         <div className="mt-4">
+                            <Label 
+                                htmlFor="patch-upload" 
+                                className="w-full aspect-square border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center relative overflow-hidden bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors"
+                            >
+                                <Upload className="w-16 h-16 text-muted-foreground/40 mb-4" />
+                                <p className="text-muted-foreground mb-2">Click to browse or drag & drop</p>
+                                <Button variant="outline" type="button" onClick={() => fileInputRef.current?.click()}>
+                                    Browse Files
+                                </Button>
+                            </Label>
+                            <Input 
+                                id="patch-upload"
+                                ref={fileInputRef}
+                                type="file" 
+                                className="hidden" 
+                                accept="image/*"
+                                onChange={handleFileChange}
+                            />
+                        </div>
                          <SubmitButton>
                              <Upload className="mr-2 h-5 w-5" /> Upload and Analyze
                          </SubmitButton>
