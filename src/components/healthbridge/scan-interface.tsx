@@ -1,91 +1,68 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Camera, Upload } from 'lucide-react';
+import { Camera, Upload, Loader2 } from 'lucide-react';
 import type { ScanResult } from '@/lib/types';
 import { ScanResultCard } from './scan-result-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { analyzePatchAction } from '@/actions/analyze-patch';
+
+const initialState = {
+  message: '',
+  result: undefined,
+  errors: {},
+};
+
+function SubmitButton({ children }: { children: React.ReactNode }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" disabled={pending} size="lg" className="w-full mt-4">
+      {pending ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Analyzing...</> : children}
+    </Button>
+  );
+}
 
 
 export function ScanInterface({ onScanComplete }: { onScanComplete: (result: ScanResult) => void }) {
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [progress, setProgress] = useState(0);
+    const [state, formAction] = useFormState(analyzePatchAction, initialState);
     const [scanResult, setScanResult] = useState<ScanResult | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [imageDataUri, setImageDataUri] = useState<string>('');
+    const formRef = useRef<HTMLFormElement>(null);
 
-    const startAnalysis = () => {
-        setIsAnalyzing(true);
-        setProgress(0);
-    }
-    
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files[0]) {
-            // We could process the file here, e.g., show a preview.
-            // For now, we just start the analysis simulation.
-            startAnalysis();
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (loadEvent) => {
+                const dataUri = loadEvent.target?.result as string;
+                setImageDataUri(dataUri);
+            };
+            reader.readAsDataURL(file);
         }
     };
+    
+    useEffect(() => {
+        if(imageDataUri) {
+            formRef.current?.requestSubmit();
+        }
+    }, [imageDataUri]);
 
     useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (isAnalyzing) {
-            timer = setInterval(() => {
-                setProgress(prev => {
-                    if (prev >= 100) {
-                        clearInterval(timer);
-                        
-                        // pH spot: blue (ok) -> yellow (bad, high pH/acidic)
-                        const phColors = ['blue', 'yellow'];
-                        // Lactate spot: clear (ok) -> dark blue/purple (bad, high lactate)
-                        const lactateColors = ['clear', 'dark blue', 'purple'];
-                        // Temp spot: blue (ok) -> red (bad, high temp)
-                        const tempColors = ['blue', 'red'];
-
-                        const ph = phColors[Math.floor(Math.random() * phColors.length)];
-                        const lactate = lactateColors[Math.floor(Math.random() * lactateColors.length)];
-                        const temp = tempColors[Math.floor(Math.random() * tempColors.length)];
-
-                        let status: ScanResult['status'] = 'healthy';
-                        let details = 'All indicators are normal. ';
-                        const badIndicators = [];
-
-                        if (ph === 'yellow') {
-                           badIndicators.push('High pH (acidic) detected.');
-                        }
-                        if (lactate === 'dark blue' || lactate === 'purple') {
-                            badIndicators.push('High lactate (anaerobic metabolism) indicated.');
-                        }
-                        if (temp === 'red') {
-                            badIndicators.push('High temperature (fever/inflammation) indicated.');
-                        }
-
-                        if (badIndicators.length > 0) {
-                            status = 'urgent';
-                            details = 'Urgent indicators detected: ' + badIndicators.join(' ');
-                        } else if (Math.random() > 0.7) { // Randomly assign monitor status for variety if no urgent indicators
-                            status = 'monitor';
-                            details = 'Some indicators are borderline. Please monitor and re-scan soon.';
-                        }
-
-                        const result: ScanResult = {
-                            id: `scan-${Date.now()}`,
-                            timestamp: new Date(),
-                            status: status,
-                            details: details,
-                        };
-                        setScanResult(result);
-                        return 100;
-                    }
-                    return prev + 10;
-                });
-            }, 200);
+        if (state.result) {
+            const result: ScanResult = {
+                id: `scan-${Date.now()}`,
+                timestamp: new Date(),
+                status: state.result.status,
+                details: state.result.details,
+            };
+            setScanResult(result);
         }
-        return () => clearInterval(timer);
-    }, [isAnalyzing]);
+        // TODO: Handle errors from state.message
+    }, [state]);
     
     if (scanResult) {
         return (
@@ -101,62 +78,57 @@ export function ScanInterface({ onScanComplete }: { onScanComplete: (result: Sca
         );
     }
 
-    if (isAnalyzing) {
-        return (
-             <div className="container mx-auto p-8 flex flex-col items-center justify-center min-h-[60vh]">
-                 <div className="w-full max-w-lg mt-8">
-                     <Progress value={progress} className="w-full" />
-                     <p className="text-center mt-4 text-lg text-muted-foreground">Analyzing your patch...</p>
-                </div>
-            </div>
-        );
-    }
-
-
     return (
         <div className="container mx-auto p-8 flex flex-col items-center">
             <h2 className="text-3xl font-bold tracking-tight mb-2">Scan Your Patch</h2>
             <p className="text-muted-foreground mb-8">Position your patch for the camera or upload an image.</p>
             
-            <Tabs defaultValue="camera" className="w-full max-w-lg">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="camera">
-                        <Camera className="mr-2 h-4 w-4"/>
-                        Scan with Camera
-                    </TabsTrigger>
-                    <TabsTrigger value="upload">
-                        <Upload className="mr-2 h-4 w-4"/>
-                        Upload Image
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent value="camera">
-                     <div className="w-full aspect-square bg-black rounded-lg flex items-center justify-center relative overflow-hidden mt-4">
-                        <div className="absolute inset-8 border-2 border-dashed border-white/50 rounded-md"></div>
-                        <Camera className="w-24 h-24 text-white/20" />
-                    </div>
-                    <Button size="lg" className="w-full mt-4" onClick={startAnalysis}>
-                        Capture
-                    </Button>
-                </TabsContent>
-                <TabsContent value="upload">
-                    <div className="w-full aspect-square border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center relative overflow-hidden mt-4 bg-muted/20">
-                        <Upload className="w-16 h-16 text-muted-foreground/40 mb-4" />
-                        <p className="text-muted-foreground mb-2">Drag & drop an image or</p>
-                         <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                            Browse Files
+            <form ref={formRef} action={formAction}>
+                 <input type="hidden" name="imageDataUri" value={imageDataUri} />
+                <Tabs defaultValue="camera" className="w-full max-w-lg">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="camera">
+                            <Camera className="mr-2 h-4 w-4"/>
+                            Scan with Camera
+                        </TabsTrigger>
+                        <TabsTrigger value="upload">
+                            <Upload className="mr-2 h-4 w-4"/>
+                            Upload Image
+                        </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="camera">
+                        <div className="w-full aspect-square bg-black rounded-lg flex items-center justify-center relative overflow-hidden mt-4">
+                            <div className="absolute inset-8 border-2 border-dashed border-white/50 rounded-md"></div>
+                            <Camera className="w-24 h-24 text-white/20" />
+                        </div>
+                        <p className="text-center text-sm text-muted-foreground mt-4">Camera functionality is not yet implemented. Please use the upload option.</p>
+                        <Button size="lg" className="w-full mt-4" disabled>
+                            Capture
                         </Button>
+                    </TabsContent>
+                    <TabsContent value="upload">
+                        <Label htmlFor="patch-upload" className="w-full aspect-square border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center relative overflow-hidden mt-4 bg-muted/20 cursor-pointer">
+                            <Upload className="w-16 h-16 text-muted-foreground/40 mb-4" />
+                            <p className="text-muted-foreground mb-2">Click to browse or drag & drop</p>
+                            <Button variant="outline" type="button">
+                                Browse Files
+                            </Button>
+                        </Label>
                         <Input 
-                            ref={fileInputRef}
+                            id="patch-upload"
                             type="file" 
                             className="hidden" 
                             accept="image/*"
                             onChange={handleFileChange}
                         />
-                    </div>
-                </TabsContent>
-            </Tabs>
+                         <SubmitButton>
+                             <Upload className="mr-2 h-5 w-5" /> Upload and Analyze
+                         </SubmitButton>
+                    </TabsContent>
+                </Tabs>
+            </form>
             
-            <p className="text-xs text-muted-foreground mt-8">Note: The scanning process works offline.</p>
+            <p className="text-xs text-muted-foreground mt-8">Note: Analysis is performed by an AI model.</p>
         </div>
     );
 }
