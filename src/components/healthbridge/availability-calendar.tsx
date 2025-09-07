@@ -4,6 +4,7 @@ import { useApp } from '@/contexts/app-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { AvailabilitySlot } from '@/lib/types';
+import { Fragment } from 'react';
 
 export function AvailabilityCalendar() {
   const { availability, toggleAvailability } = useApp();
@@ -23,8 +24,8 @@ export function AvailabilityCalendar() {
           {times.map(time => <div key={time} className="font-semibold">{time}</div>)}
           
           {days.map(day => (
-            <>
-              <div key={day} className="font-semibold self-center">{day}</div>
+            <Fragment key={day}>
+              <div className="font-semibold self-center">{day}</div>
               {times.map(time => {
                 const slot = { day, time };
                 const isAvailable = availability.some(s => s.day === day && s.time === time);
@@ -42,7 +43,7 @@ export function AvailabilityCalendar() {
                   </div>
                 );
               })}
-            </>
+            </Fragment>
           ))}
         </div>
       </CardContent>
