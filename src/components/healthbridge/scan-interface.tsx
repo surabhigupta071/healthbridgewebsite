@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Camera, Upload, Loader2 } from 'lucide-react';
 import type { ScanResult } from '@/lib/types';
 import { ScanResultCard } from './scan-result-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { analyzePatchAction } from '@/actions/analyze-patch';
 
 const initialState = {
