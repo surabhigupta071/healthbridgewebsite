@@ -38,7 +38,7 @@ export function ScanInterface({ onScanComplete }: { onScanComplete: (result: Sca
                     if (prev >= 100) {
                         clearInterval(timer);
                         
-                        // pH spot: blue (ok) -> yellow (bad, high pH)
+                        // pH spot: blue (ok) -> yellow (bad, high pH/acidic)
                         const phColors = ['blue', 'yellow'];
                         // Lactate spot: clear (ok) -> dark blue/purple (bad, high lactate)
                         const lactateColors = ['clear', 'dark blue', 'purple'];
@@ -54,7 +54,7 @@ export function ScanInterface({ onScanComplete }: { onScanComplete: (result: Sca
                         const badIndicators = [];
 
                         if (ph === 'yellow') {
-                           badIndicators.push('High pH (alkaline) detected.');
+                           badIndicators.push('High pH (acidic) detected.');
                         }
                         if (lactate === 'dark blue' || lactate === 'purple') {
                             badIndicators.push('High lactate (anaerobic metabolism) indicated.');
