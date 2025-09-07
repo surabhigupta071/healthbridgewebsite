@@ -96,9 +96,6 @@ export function UserDashboard() {
                             </div>
                             <p><span className="font-semibold">Sarah C.</span> is on their way.</p>
                             <p>Arriving in approximately <span className="font-semibold text-primary">5 minutes</span>.</p>
-                             <div className="aspect-video w-full rounded-lg overflow-hidden mt-4">
-                                <Image src="https://picsum.photos/600/400" alt="Map" width={600} height={400} className="object-cover w-full h-full" data-ai-hint="map satellite" />
-                            </div>
                         </div>
                     )}
                 </CardContent>
