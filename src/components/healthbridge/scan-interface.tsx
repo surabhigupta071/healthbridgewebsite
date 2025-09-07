@@ -38,10 +38,12 @@ export function ScanInterface({ onScanComplete }: { onScanComplete: (result: Sca
                     if (prev >= 100) {
                         clearInterval(timer);
                         
-                        // Simulate patch color analysis
-                        const phColors = ['blue', 'yellow']; // blue is ok, yellow is bad
-                        const lactateColors = ['clear', 'dark blue', 'purple']; // clear is ok, others bad
-                        const tempColors = ['blue', 'red']; // blue is ok, red is bad
+                        // pH spot: blue (ok) -> yellow (bad, high pH)
+                        const phColors = ['blue', 'yellow'];
+                        // Lactate spot: clear (ok) -> dark blue/purple (bad, high lactate)
+                        const lactateColors = ['clear', 'dark blue', 'purple'];
+                        // Temp spot: blue (ok) -> red (bad, high temp)
+                        const tempColors = ['blue', 'red'];
 
                         const ph = phColors[Math.floor(Math.random() * phColors.length)];
                         const lactate = lactateColors[Math.floor(Math.random() * lactateColors.length)];
@@ -49,15 +51,22 @@ export function ScanInterface({ onScanComplete }: { onScanComplete: (result: Sca
 
                         let status: ScanResult['status'] = 'healthy';
                         let details = 'All indicators are normal. ';
+                        const badIndicators = [];
 
-                        if (ph === 'yellow' || lactate === 'dark blue' || lactate === 'purple' || temp === 'red') {
+                        if (ph === 'yellow') {
+                           badIndicators.push('High pH (alkaline) detected.');
+                        }
+                        if (lactate === 'dark blue' || lactate === 'purple') {
+                            badIndicators.push('High lactate (anaerobic metabolism) indicated.');
+                        }
+                        if (temp === 'red') {
+                            badIndicators.push('High temperature (fever/inflammation) indicated.');
+                        }
+
+                        if (badIndicators.length > 0) {
                             status = 'urgent';
-                            details = 'Urgent indicators detected. ';
-                            if (ph === 'yellow') details += 'Acidic tissue (ischemia) indicated. ';
-                            if (lactate !== 'clear') details += 'High lactate (anaerobic metabolism) indicated. ';
-                            if (temp === 'red') details += 'High temperature (fever/inflammation) indicated. ';
-
-                        } else if (Math.random() > 0.7) { // Randomly assign monitor status for variety
+                            details = 'Urgent indicators detected: ' + badIndicators.join(' ');
+                        } else if (Math.random() > 0.7) { // Randomly assign monitor status for variety if no urgent indicators
                             status = 'monitor';
                             details = 'Some indicators are borderline. Please monitor and re-scan soon.';
                         }
