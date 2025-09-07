@@ -13,9 +13,11 @@ export function RequestRideModal({ isOpen, onClose, onConfirm }: { isOpen: boole
                         <AlertTriangle className="text-destructive" />
                         Confirm Emergency Ride Request
                     </DialogTitle>
-                    <DialogDescription className="pt-4">
-                        This will send a request to nearby volunteers for a ride to the nearest hospital. Are you sure you want to proceed?
-                        <p className="font-medium text-foreground mt-2">~3 volunteers available nearby.</p>
+                    <DialogDescription className="pt-4" asChild>
+                        <div>
+                            This will send a request to nearby volunteers for a ride to the nearest hospital. Are you sure you want to proceed?
+                            <p className="font-medium text-foreground mt-2">~3 volunteers available nearby.</p>
+                        </div>
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
