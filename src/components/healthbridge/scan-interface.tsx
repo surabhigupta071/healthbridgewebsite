@@ -37,14 +37,36 @@ export function ScanInterface({ onScanComplete }: { onScanComplete: (result: Sca
                 setProgress(prev => {
                     if (prev >= 100) {
                         clearInterval(timer);
-                        // Simulate getting a random result
-                        const statuses: ScanResult['status'][] = ['healthy', 'monitor', 'urgent'];
-                        const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                        
+                        // Simulate patch color analysis
+                        const phColors = ['blue', 'yellow']; // blue is ok, yellow is bad
+                        const lactateColors = ['clear', 'dark blue', 'purple']; // clear is ok, others bad
+                        const tempColors = ['blue', 'red']; // blue is ok, red is bad
+
+                        const ph = phColors[Math.floor(Math.random() * phColors.length)];
+                        const lactate = lactateColors[Math.floor(Math.random() * lactateColors.length)];
+                        const temp = tempColors[Math.floor(Math.random() * tempColors.length)];
+
+                        let status: ScanResult['status'] = 'healthy';
+                        let details = 'All indicators are normal. ';
+
+                        if (ph === 'yellow' || lactate === 'dark blue' || lactate === 'purple' || temp === 'red') {
+                            status = 'urgent';
+                            details = 'Urgent indicators detected. ';
+                            if (ph === 'yellow') details += 'Acidic tissue (ischemia) indicated. ';
+                            if (lactate !== 'clear') details += 'High lactate (anaerobic metabolism) indicated. ';
+                            if (temp === 'red') details += 'High temperature (fever/inflammation) indicated. ';
+
+                        } else if (Math.random() > 0.7) { // Randomly assign monitor status for variety
+                            status = 'monitor';
+                            details = 'Some indicators are borderline. Please monitor and re-scan soon.';
+                        }
+
                         const result: ScanResult = {
                             id: `scan-${Date.now()}`,
                             timestamp: new Date(),
-                            status: randomStatus,
-                            details: `This is a simulated result for a '${randomStatus}' status. Contact a health professional for a real diagnosis.`,
+                            status: status,
+                            details: details,
                         };
                         setScanResult(result);
                         return 100;
