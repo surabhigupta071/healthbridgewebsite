@@ -85,7 +85,7 @@ export function VolunteerDashboard() {
                 </CardHeader>
                 <CardContent>
                     <div className="aspect-square w-full rounded-lg overflow-hidden">
-                        <Image src="https://picsum.photos/400/400" alt="Map of requests" width={400} height={400} className="object-cover w-full h-full" data-ai-hint="map city" />
+                        <Image src="https://picsum.photos/400/400" alt="Map of requests" width={400} height={400} className="object-cover w-full h-full" data-ai-hint="map gps" />
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">Map shows approximate locations of active requests.</p>
                 </CardContent>
