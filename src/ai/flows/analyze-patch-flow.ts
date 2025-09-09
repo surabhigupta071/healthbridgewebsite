@@ -1,19 +1,21 @@
 'use server';
 
+// main file for health patch checker -- basically runs the logic for "is this patch showing wack health stuff?"
+
 /**
- * @fileOverview Analyzes a health patch image to determine health status based on color indicators.
+ * @fileOverview does patch img analysis & spits out if stuff is urgent or not
  *
- * This file exports:
- * - `analyzePatch`: An async function that takes an image of a health patch and returns an analysis
- *   of its color indicators.
- * - `AnalyzePatchInput`: The input type for the analyzePatch function.
- * - `AnalyzePatchOutput`: The output type for the analyzePatch function.
+ * this file exports:
+ * - `analyzePatch`: async function, puts image in, gets result out (kinda magic)
+ * - `AnalyzePatchInput`: basically the shape for what analyzePatch eats
+ * - `AnalyzePatchOutput`: shape for what comes out of analyzePatch
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import type { HealthStatus } from '@/lib/types';
 
+// Schema for what pic comes in -- gotta be a data uri, base64, all that jazz (see docs if confused tbh)
 const AnalyzePatchInputSchema = z.object({
   imageDataUri: z
     .string()
@@ -23,6 +25,7 @@ const AnalyzePatchInputSchema = z.object({
 });
 export type AnalyzePatchInput = z.infer<typeof AnalyzePatchInputSchema>;
 
+// Output tells us color for each spot + summary status. comments explain what we're lookin' for
 const AnalyzePatchOutputSchema = z.object({
   ph: z.string().describe("Detected color of the pH spot. Can be 'blue' (normal) or 'yellow' (acidic)."),
   lactate: z.string().describe("Detected color of the lactate spot. Can be 'clear' (normal) or 'dark blue'/'purple' (elevated)."),
@@ -32,13 +35,14 @@ const AnalyzePatchOutputSchema = z.object({
 });
 export type AnalyzePatchOutput = z.infer<typeof AnalyzePatchOutputSchema>;
 
-
+// ok this is the main function - give it patch data, it runs the flow and gives u an answer (no side effects I think)
 export async function analyzePatch(
   input: AnalyzePatchInput
 ): Promise<AnalyzePatchOutput> {
-  return analyzePatchFlow(input);
+  return analyzePatchFlow(input); // just calls below, nothing too wild
 }
 
+// defines the prompt -- this is what we tell the AI to do, pretty literal
 const analyzePatchPrompt = ai.definePrompt({
   name: 'analyzePatchPrompt',
   input: { schema: AnalyzePatchInputSchema },
@@ -62,6 +66,7 @@ Image to analyze: {{media url=imageDataUri}}
 `,
 });
 
+// this is the actual "flow" that uses the prompt + puts together a final answer for the UI
 const analyzePatchFlow = ai.defineFlow(
   {
     name: 'analyzePatchFlow',
@@ -69,16 +74,19 @@ const analyzePatchFlow = ai.defineFlow(
     outputSchema: AnalyzePatchOutputSchema,
   },
   async (input) => {
+    // ask the ai, fingers crossed it works
     const { output } = await analyzePatchPrompt(input);
     if (!output) {
+      // uhhh something broke :/ panic
       throw new Error('Failed to get a response from the AI model.');
     }
 
-    // Determine status and details based on the AI's color analysis
+    // basic logic -- look for urgent signs and build up our list of probs
     const { ph, lactate, temp } = output;
     const badIndicators: string[] = [];
     let status: HealthStatus = 'healthy';
 
+    // check phrases, not case sensitive (doing it the lazy way for now)
     if (ph && ph.toLowerCase().includes('yellow')) {
       badIndicators.push('High pH (acidic) detected.');
     }
@@ -91,16 +99,16 @@ const analyzePatchFlow = ai.defineFlow(
 
     let details = '';
     if (badIndicators.length > 0) {
+      // yeah it's bad news
       status = 'urgent';
       details = 'Urgent indicators detected: ' + badIndicators.join(' ');
     } else {
-        // This part can be enhanced if the model provides borderline colors
+        // TODO: could handle monitor/borderline better but whatever for now
         status = 'healthy';
         details = 'All indicators are normal.';
     }
 
-    // We can use the AI's generated details, or construct our own like above.
-    // Let's stick with the constructed one for consistency.
+    // note: could use AI's details but sticking with ours for now (maybe change later)
     return {
         ...output,
         status,
@@ -108,3 +116,5 @@ const analyzePatchFlow = ai.defineFlow(
     };
   }
 );
+
+
