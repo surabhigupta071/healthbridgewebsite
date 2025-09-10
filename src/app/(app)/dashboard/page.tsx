@@ -2,17 +2,18 @@
 
 import { useApp } from "@/contexts/app-context";
 import { UserDashboard } from "@/components/healthbridge/user-dashboard";
-import { VolunteerDashboard } from "@/components/healthbridge/volunteer-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const { role } = useApp();
 
+  // If the user role isn’t loaded yet, show a loading placeholder
   if (!role) {
-    // This can be a loading state
     return (
       <div className="container py-8">
+        {/* Large header placeholder */}
         <Skeleton className="h-32 w-full" />
+        {/* Placeholder cards for dashboard content */}
         <div className="mt-8 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-64 w-full" />
@@ -22,9 +23,10 @@ export default function DashboardPage() {
     );
   }
 
+  // Once the role is loaded, show the actual user dashboard with a smooth transition
   return (
     <div className="transition-all duration-500">
-      {role === 'user' ? <UserDashboard /> : <VolunteerDashboard />}
+      <UserDashboard />
     </div>
   );
 }
