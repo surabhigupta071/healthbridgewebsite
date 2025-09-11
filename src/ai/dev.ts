@@ -1,6 +1,6 @@
+// Load environment variables from a .env file at the very start
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/enhance-user-location-accuracy.ts';
-import '@/ai/flows/analyze-patch-flow.ts'; 
- 
+// Import the AI patch analysis flow logic so it runs when this file is loaded
+import '@/ai/flows/analyze-patch-flow.ts';
