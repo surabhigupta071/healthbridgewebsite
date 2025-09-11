@@ -2,69 +2,50 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useState, useMemo } from 'react';
-import type { RideRequest, AvailabilitySlot } from '@/lib/types';
-import { mockRideRequests, mockAvailability } from '@/lib/mock-data';
 
-export type Role = 'user' | 'volunteer';
+// Define the Role type—currently only 'user' or null
+export type Role = 'user' | null;
 
+// Shape for our app-wide context
 type AppContextType = {
-  role: Role | null;
+  role: Role;
   setRole: (role: Role) => void;
   isAuthenticated: boolean;
   login: (role: Role) => void;
   logout: () => void;
-  rideRequests: RideRequest[];
-  acceptRide: (rideId: string) => void;
-  availability: AvailabilitySlot[];
-  toggleAvailability: (slot: AvailabilitySlot) => void;
 };
 
+// Create the context with an undefined default (enforcing use within a provider)
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Main provider component to wrap your app
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<Role | null>(null);
+  const [role, setRole] = useState<Role>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [rideRequests, setRideRequests] = useState<RideRequest[]>(mockRideRequests);
-  const [availability, setAvailability] = useState<AvailabilitySlot[]>(mockAvailability);
 
+  // Login: set role and authentication state
   const login = (selectedRole: Role) => {
     setRole(selectedRole);
     setIsAuthenticated(true);
   };
 
+  // Logout: clear role and authentication state
   const logout = () => {
     setRole(null);
     setIsAuthenticated(false);
   };
-  
-  const acceptRide = (rideId: string) => {
-    setRideRequests(prev => prev.filter(r => r.id !== rideId));
-  };
-  
-  const toggleAvailability = (slot: AvailabilitySlot) => {
-    setAvailability(prev => {
-      const isSet = prev.some(s => s.day === slot.day && s.time === slot.time);
-      if (isSet) {
-        return prev.filter(s => s.day !== slot.day || s.time !== slot.time);
-      } else {
-        return [...prev, slot];
-      }
-    });
-  };
 
-  const contextValue = useMemo(() => ({
-    role,
-    setRole: (newRole: Role) => {
-        if(isAuthenticated) setRole(newRole);
-    },
-    isAuthenticated,
-    login,
-    logout,
-    rideRequests,
-    acceptRide,
-    availability,
-    toggleAvailability,
-  }), [role, isAuthenticated, rideRequests, availability]);
+  // Memoize context to avoid unnecessary rerenders
+  const contextValue = useMemo(
+    () => ({
+      role,
+      setRole,
+      isAuthenticated,
+      login,
+      logout,
+    }),
+    [role, isAuthenticated]
+  );
 
   return (
     <AppContext.Provider value={contextValue}>
@@ -73,9 +54,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Hook to conveniently consume the context in components
 export function useApp() {
   const context = useContext(AppContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useApp must be used within an AppProvider');
   }
   return context;
