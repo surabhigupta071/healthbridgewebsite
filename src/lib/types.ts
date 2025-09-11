@@ -16,7 +16,7 @@ export type RideRequest = {
   destination: string;
   requestTime: Date;
   status: 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
-  volunteerId?: string;
+  driverId?: string;
   eta?: string;
 };
 
@@ -29,21 +29,13 @@ export type UserProfile = {
   language: string;
 };
 
-export type VolunteerProfile = {
+export type Driver = {
   id: string;
   name: string;
-  contact: string;
-  emergencyContacts: string[];
-  qualifications?: string;
-  language: string;
-  notificationPreferences: {
-    email: boolean;
-    sms: boolean;
-    push: boolean;
+  location: {
+    lat: number;
+    lng: number;
   };
-};
-
-export type AvailabilitySlot = {
-  day: 'Sun' | 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat';
-  time: 'Morning' | 'Afternoon' | 'Evening';
+  vehicle: string;
+  phone: string;
 };
