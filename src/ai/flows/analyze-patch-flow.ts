@@ -1,105 +1,81 @@
 'use server';
 
 /**
- * @fileOverview
- * Analyses a health patch img to get health stsatus from color indicatrs.
- * Exports:
- * - analyzePatch: async fn to analyze patch img colors.
- * - AnalyzePatchInput: input type for fn.
- * - AnalyzePatchOutput: output type.
+ * @fileOverview Analyzes a health patch image to determine health status based on color indicators.
+ * This file exports:
+ * - analyzePatch: async function taking a patch image and returning health analysis.
+ * - Input/output schemas for validation and typing.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { ai } from '@/ai/genkit'; // AI integration from Genkit
+import { z } from 'genkit'; // schema validation lib
 import type { HealthStatus } from '@/lib/types';
-import { gemini15Pro } from '@genkit-ai/googleai';
 
-// Input schema - expects an image data URI string (base64 + mimetype)
+// Input schema for the AI prompt, expects image as base64 data URI
 const AnalyzePatchInputSchema = z.object({
   imageDataUri: z
     .string()
-    .describe("Base64 img string, incl mime type. Ex: 'data:<mimetype>;base64,<data>'"),
+    .describe(
+      "Photo of health patch as data URI, must include MIME type & base64 data, eg: 'data:<mimetype>;base64,<encoded>'."
+    ),
 });
+
 export type AnalyzePatchInput = z.infer<typeof AnalyzePatchInputSchema>;
 
-// Output schema - colors detected + status + summary of findins
+// Output schema describing possible status & details from AI analysis
 const AnalyzePatchOutputSchema = z.object({
-  ph: z.string().describe("pH spot color: 'blue' (norm) or 'yellow' (acidic)"),
-  lactate: z.string().describe("Lactate spot color: 'clear' (norm), 'dark blue'/'purple' (high)"),
-  temp: z.string().describe("Temp spot: 'blue' (norm) or 'red' (elevated)"),
-  status: z.enum(['healthy', 'monitor', 'urgent']).describe("Overall health status"),
-  details: z.string().describe("Summary explaning status"),
+  ph: z.string().describe("Color of the pH spot: 'blue' (normal) or 'yellow' (acidic)."),
+  temp: z.string().describe("Color of temperature spot: 'blue' (normal) or 'red' (elevated)."),
+  status: z.enum(['healthy', 'monitor', 'urgent']).describe("Overall health status."),
+  details: z.string().describe("User-friendly summary of abnormalities or confirmation all normal."),
 });
+
 export type AnalyzePatchOutput = z.infer<typeof AnalyzePatchOutputSchema>;
 
-// Main exported fn calling internal flow
+// Exposed main async function to analyze patch image, delegates to internal flow
 export async function analyzePatch(
   input: AnalyzePatchInput
 ): Promise<AnalyzePatchOutput> {
   return analyzePatchFlow(input);
 }
 
-// The AI prompt keeps your original wording exactly as requested:
+// Defines the AI prompt text and input/output schemas to use with Genkit
 const analyzePatchPrompt = ai.definePrompt({
   name: 'analyzePatchPrompt',
-  model: gemini15Pro,
   input: { schema: AnalyzePatchInputSchema },
   output: { schema: AnalyzePatchOutputSchema },
-  prompt: `You are an expert at analyzing medical patches from images. Your task is to identify the colors of three specific spots on the patch.
-  
-The patch has three indicators:
-1.  **pH spot**: Turns from **blue (normal)** to **yellow (acidic)** when tissue is ischemic.
-2.  **Lactate spot**: Changes from **clear (normal)** to **dark blue** or **purple** if lactate is elevated, indicating anaerobic metabolism.
-3.  **Temperature spot**: Uses thermochromic ink to turn from **blue (normal)** to **red** if there’s a fever or inflammation.
+  prompt: `You are an expert at analyzing medical patches from images. Your task is to identify colors of two spots and determine health status.
 
-Analyze the provided image and determine the color of each spot. Only return the colors.
+Patch has two indicators:
+1. pH spot: blue(normal)→yellow(ischemic)
+2. Temperature spot: blue(normal)→red(elevated fever)
 
-Image to analyze: {{media url=imageDataUri}}
+- If pH is yellow, status = 'urgent'
+- If temperature is red, status = 'monitor'
+- If both normal (blue), status = 'healthy'
+
+Provide final status and simple user summary (e.g. 'Elevated temperature detected...').
+
+Image: {{media url=imageDataUri}}
 `,
 });
 
-// Flow def executing prompt and applying busines logic
+// Internal reusable AI flow to send prompt and get parsed output, with a 1 hour cache
 const analyzePatchFlow = ai.defineFlow(
   {
     name: 'analyzePatchFlow',
     inputSchema: AnalyzePatchInputSchema,
     outputSchema: AnalyzePatchOutputSchema,
+    cache: {
+      ttl: 3600, // 1 hour cache
+    },
   },
   async (input) => {
     const { output } = await analyzePatchPrompt(input);
-    if (!output) throw new Error('No AI resp from prompt');
-
-    // unpack AI output colors for each spot
-    const { ph, lactate, temp } = output;
-    const badInds: string[] = [];
-    let status: HealthStatus = 'healthy';
-
-    // collect warnings if abnormal colors found
-    if (ph.toLowerCase().includes('yellow')) {
-      badInds.push('ph is high (acidic) detected.');
+    if (!output) {
+      throw new Error('Failed to get a response from AI model.');
     }
-    if (lactate.toLowerCase().includes('dark blue') || lactate.toLowerCase().includes('purple')) {
-      badInds.push('lactate high, anaerobic metab indicated.');
-    }
-    if (temp.toLowerCase().includes('red')) {
-      badInds.push('temp high (fever/inflam) found.');
-    }
-
-    // determine status. 2+ bad inds = urgent, 1 = monitor
-    if (badInds.length >= 2) status = 'urgent';
-    else if (badInds.length === 1) status = 'monitor';
-
-    // create summary string for details
-    const details = badInds.length > 0 ? `Abnorm inds: ${badInds.join(' ')}` : 'norm all good.';
-
-    // finally return original output + status + details
-    return {
-      ...output,
-      status,
-      details,
-    };
+    return output;
   }
 );
-
-
 
